@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\FreeGameIsAFreeGame.Core\FreeGameIsAFreeGame.Core\FreeGameIsAFreeGame.Core\FreeGameIsAFreeGame.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="AngleSharp" Version="0.14.0" />
+      <PackageReference Include="NLog" Version="4.7.4" />
+    </ItemGroup>
+
+</Project>
