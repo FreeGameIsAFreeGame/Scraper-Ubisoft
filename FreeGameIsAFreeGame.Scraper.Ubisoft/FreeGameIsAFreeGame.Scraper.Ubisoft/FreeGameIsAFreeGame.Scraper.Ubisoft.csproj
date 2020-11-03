@@ -2,11 +2,18 @@
 
     <PropertyGroup>
         <TargetFramework>netcoreapp3.1</TargetFramework>
+        <Title>Free Game Is A Free Game - Ubisoft Scraper</Title>
+        <Copyright>FreeGameIsAFreeGame</Copyright>
+        <PackageProjectUrl>https://github.com/FreeGameIsAFreeGame/Scraper-Ubisoft</PackageProjectUrl>
+        <PackageLicenseUrl>github.com/FreeGameIsAFreeGame/Scraper-Ubisoft/blob/master/LICENSE</PackageLicenseUrl>
+        <RepositoryUrl>https://github.com/FreeGameIsAFreeGame/Scraper-Ubisoft</RepositoryUrl>
+        <PackageVersion>1.0.2</PackageVersion>
+        <Authors>Thundernerd</Authors>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="AngleSharp" Version="0.14.0" />
-      <PackageReference Include="FreeGameIsAFreeGame.Core" Version="1.0.0" />
+      <PackageReference Include="FreeGameIsAFreeGame.Core" Version="2.0.0" />
       <PackageReference Include="NLog" Version="4.7.4" />
     </ItemGroup>
 

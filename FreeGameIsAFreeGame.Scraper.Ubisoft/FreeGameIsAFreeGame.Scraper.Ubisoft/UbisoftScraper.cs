@@ -32,6 +32,7 @@ namespace FreeGameIsAFreeGame.Scraper.Ubisoft
             {
                 await Task.Delay(1500);
 
+                logger.Info($"Getting items {start} to {start + OFFSET}");
                 IHtmlElement pageBody = await GetPageBody(start, token);
                 if (token.IsCancellationRequested)
                     return null;
