@@ -23,7 +23,16 @@ namespace FreeGameIsAFreeGame.Scraper.Ubisoft
         private IBrowsingContext context;
         private ILogger logger;
 
-        async Task<IEnumerable<IDeal>> IScraper.Scrape(CancellationToken token)
+        public UbisoftScraper()
+        {
+            context = BrowsingContext.New(Configuration.Default
+                .WithDefaultLoader()
+                .WithDefaultCookies());
+
+            logger = LogManager.GetLogger(GetType().FullName);
+        }
+
+        public async Task<IEnumerable<IDeal>> Scrape(CancellationToken token)
         {
             List<IDeal> deals = new List<IDeal>();
 
