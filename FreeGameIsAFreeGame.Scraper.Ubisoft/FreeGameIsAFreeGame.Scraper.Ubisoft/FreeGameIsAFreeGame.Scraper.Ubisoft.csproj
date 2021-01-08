@@ -7,7 +7,7 @@
         <PackageProjectUrl>https://github.com/FreeGameIsAFreeGame/Scraper-Ubisoft</PackageProjectUrl>
         <PackageLicenseUrl>github.com/FreeGameIsAFreeGame/Scraper-Ubisoft/blob/master/LICENSE</PackageLicenseUrl>
         <RepositoryUrl>https://github.com/FreeGameIsAFreeGame/Scraper-Ubisoft</RepositoryUrl>
-        <PackageVersion>1.0.2</PackageVersion>
+        <PackageVersion>1.0.3</PackageVersion>
         <Authors>Thundernerd</Authors>
     </PropertyGroup>
 
