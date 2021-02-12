@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using AngleSharp;
@@ -15,13 +15,9 @@ namespace FreeGameIsAFreeGame.Scraper.Ubisoft
 {
     public class UbisoftScraper : IScraper
     {
-        private const int OFFSET = 16;
-
-        string IScraper.Identifier => "UbisoftFree";
-        string IScraper.DisplayName => "Ubisoft Store";
-
-        private IBrowsingContext context;
-        private ILogger logger;
+        private const string URL = "https://store.ubi.com/us/search/?lang=en_US&cgid=free-offers&prefn1=freeOfferProductType&prefv1=Giveaway&categoryslot=true&format=ajax";
+        private readonly IBrowsingContext context;
+        private readonly ILogger logger;
 
         public UbisoftScraper()
         {
@@ -32,113 +28,71 @@ namespace FreeGameIsAFreeGame.Scraper.Ubisoft
             logger = LogManager.GetLogger(GetType().FullName);
         }
 
+        string IScraper.Identifier => "UbisoftFree";
+        string IScraper.DisplayName => "Ubisoft Store";
+
         public async Task<IEnumerable<IDeal>> Scrape(CancellationToken token)
         {
             List<IDeal> deals = new List<IDeal>();
 
-            int start = 0;
-            while (true)
-            {
-                await Task.Delay(1500);
-
-                logger.Info($"Getting items {start} to {start + OFFSET}");
-                IHtmlElement pageBody = await GetPageBody(start, token);
-                if (token.IsCancellationRequested)
-                    return null;
-
-                List<IDeal> parsedDeals = ParsePageBody(pageBody);
-                if (parsedDeals.Count == 0)
-                {
-                    logger.Info("No deals found, most likely the end of the catalog");
-                    break;
-                }
-
-                foreach (IDeal parsedDeal in parsedDeals)
-                {
-                    if (parsedDeal.Discount != 100)
-                        continue;
-
-                    deals.Add(parsedDeal);
-                }
-
-                start += OFFSET;
-            }
-
-            return deals;
-        }
-
-        private async Task<IHtmlElement> GetPageBody(int start, CancellationToken token)
-        {
-            logger.Debug("Getting page body from index {start}", start);
-            Url url = Url.Create(GetUrl(start));
-            DocumentRequest request = DocumentRequest.Get(url);
+            DocumentRequest request = DocumentRequest.Get(Url.Create(URL));
             IDocument document = await context.OpenAsync(request, token);
-            return token.IsCancellationRequested ? null : document.Body;
-        }
+            if (token.IsCancellationRequested)
+                return null;
 
-        private List<IDeal> ParsePageBody(IHtmlElement body)
-        {
-            List<IDeal> deals = new List<IDeal>();
+            IHtmlElement body = document.Body;
 
-            IEnumerable<IHtmlListItemElement> listItems = body.QuerySelectorAll<IHtmlListItemElement>("li.grid-tile");
-            foreach (IHtmlListItemElement listItem in listItems)
+            IEnumerable<IHtmlListItemElement> items = body.QuerySelectorAll<IHtmlListItemElement>(".grid-tile");
+            foreach (IHtmlListItemElement element in items)
             {
-                IHtmlDivElement discountElement = listItem.QuerySelector<IHtmlDivElement>("div.deal-percentage");
-                IHtmlDivElement giveawayElement = listItem.QuerySelector<IHtmlDivElement>("div.giveaway");
-                IHtmlImageElement imageElement = listItem.QuerySelector<IHtmlImageElement>("img.product_image");
-                IHtmlAnchorElement linkElement = listItem.QuerySelector<IHtmlAnchorElement>("a.button");
-                IHtmlDivElement titleElement = listItem.QuerySelector<IHtmlDivElement>("div.card-title");
-                IHtmlDivElement editionElement = listItem.QuerySelector<IHtmlDivElement>("div.card-subtitle");
+                IHtmlDivElement titleElement = element.QuerySelector<IHtmlDivElement>(".card-title");
+                string title = titleElement.TextContent.Trim();
 
-                if (discountElement == null && giveawayElement == null)
+                IHtmlAnchorElement linkElement = element.QuerySelector<IHtmlAnchorElement>(".thumb-link");
+                IHtmlImageElement imageElement = element.QuerySelector<IHtmlImageElement>(".product_image");
+                IHtmlDivElement priceElement = element.QuerySelector<IHtmlDivElement>(".card-price");
+                IHtmlDivElement availabilityElement = element.QuerySelector<IHtmlDivElement>(".product-availability-label");
+                string offerStartDate = availabilityElement.GetAttribute("data-freeofferstartdate");
+                string offerEndDate = availabilityElement.GetAttribute("data-freeofferenddate");
+
+                bool hasStartDate = DateTime.TryParseExact(offerStartDate, "ddd MMM dd HH:mm:ss Z yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime startDate);
+                bool hasEndDate = DateTime.TryParseExact(offerEndDate, "ddd MMM dd HH:mm:ss Z yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime endDate);
+
+                if (!hasStartDate && !hasEndDate)
+                {
+                    logger.Info($"{title} has no start or end date");
                     continue;
-
-                try
-                {
-                    string discount = string.Empty;
-                    if (giveawayElement != null)
-                    {
-                        discount = "100";
-                    }
-                    else
-                    {
-                        string discountText = discountElement.Text();
-                        discount = Regex.Match(discountText, "\\d+").ToString().Trim();
-                    }
-
-                    string img = imageElement.GetAttribute("data-desktop-src");
-                    string link = linkElement.Href;
-                    string title = $"{titleElement.Text().Trim()}";
-                    if (editionElement != null)
-                    {
-                        title += $" {editionElement.Text().Trim()}";
-                    }
-
-                    Deal deal = new Deal()
-                    {
-                        Discount = int.Parse(discount),
-                        Image = img,
-                        Title = title,
-                        Link = link,
-                        Start = null,
-                        End = null
-                    };
-
-                    deals.Add(deal);
                 }
-                catch (Exception e)
+
+                DateTime now = DateTime.Now;
+                if ((hasStartDate && now < startDate) || (hasEndDate && now > endDate))
                 {
-                    logger.Error(e);
+                    logger.Info($"{title} is not active right now");
+                    continue;
                 }
+
+                string price = priceElement.TextContent.Trim();
+                if (price.ToLower() != "free to play")
+                {
+                    logger.Info($"{title} is not free");
+                    continue;
+                }
+
+                deals.Add(new Deal
+                {
+                    Discount = 100,
+                    End = hasEndDate ? endDate : (DateTime?) null,
+                    Start = hasStartDate ? startDate : (DateTime?) null,
+                    Title = title,
+                    Link = $"https://store.ubi.com/{linkElement.GetAttribute("href")}",
+                    Image = imageElement.GetAttribute("data-desktop-src")
+                });
             }
 
-            return deals;
-        }
+            if (token.IsCancellationRequested)
+                return null;
 
-        private string GetUrl(int start)
-        {
-            return
-                $"https://store.ubi.com/us/video-games/?lang=en_US&prefn1=productTypeCategoryRefinementString&prefv1=Video%20Game&sz={OFFSET}&format=ajax&start={start}";
+            return deals;
         }
     }
 }
