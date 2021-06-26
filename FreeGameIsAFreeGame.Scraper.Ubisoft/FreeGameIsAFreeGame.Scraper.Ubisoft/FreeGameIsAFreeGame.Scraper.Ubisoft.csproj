@@ -7,13 +7,13 @@
         <PackageProjectUrl>https://github.com/FreeGameIsAFreeGame/Scraper-Ubisoft</PackageProjectUrl>
         <PackageLicenseUrl>github.com/FreeGameIsAFreeGame/Scraper-Ubisoft/blob/master/LICENSE</PackageLicenseUrl>
         <RepositoryUrl>https://github.com/FreeGameIsAFreeGame/Scraper-Ubisoft</RepositoryUrl>
-        <PackageVersion>2.1.0</PackageVersion>
+        <PackageVersion>2.1.1</PackageVersion>
         <Authors>Thundernerd</Authors>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="AngleSharp" Version="0.16.0" />
-      <PackageReference Include="FreeGameIsAFreeGame.Core" Version="7.2.0" />
+      <PackageReference Include="FreeGameIsAFreeGame.Core" Version="7.2.1" />
       <PackageReference Include="NLog" Version="4.7.10" />
     </ItemGroup>
 
