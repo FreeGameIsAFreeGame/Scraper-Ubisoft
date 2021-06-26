@@ -16,20 +16,22 @@ namespace FreeGameIsAFreeGame.Scraper.Ubisoft
     public class UbisoftScraper : IScraper
     {
         private const string URL = "https://store.ubi.com/us/search/?lang=en_US&cgid=free-offers&prefn1=freeOfferProductType&prefv1=Giveaway&categoryslot=true&format=ajax";
-        private readonly IBrowsingContext context;
-        private readonly ILogger logger;
+        private IBrowsingContext context;
+        private ILogger logger;
 
-        public UbisoftScraper()
+        string IScraper.Identifier => "UbisoftFree";
+
+        /// <inheritdoc />
+        public Task Initialize()
         {
             context = BrowsingContext.New(Configuration.Default
                 .WithDefaultLoader()
                 .WithDefaultCookies());
 
             logger = LogManager.GetLogger(GetType().FullName);
-        }
 
-        string IScraper.Identifier => "UbisoftFree";
-        string IScraper.DisplayName => "Ubisoft Store";
+            return Task.CompletedTask;
+        }
 
         public async Task<IEnumerable<IDeal>> Scrape(CancellationToken token)
         {
@@ -37,8 +39,7 @@ namespace FreeGameIsAFreeGame.Scraper.Ubisoft
 
             DocumentRequest request = DocumentRequest.Get(Url.Create(URL));
             IDocument document = await context.OpenAsync(request, token);
-            if (token.IsCancellationRequested)
-                return null;
+            token.ThrowIfCancellationRequested();
 
             IHtmlElement body = document.Body;
 
@@ -89,10 +90,14 @@ namespace FreeGameIsAFreeGame.Scraper.Ubisoft
                 });
             }
 
-            if (token.IsCancellationRequested)
-                return null;
-
             return deals;
+        }
+
+        /// <inheritdoc />
+        public Task Dispose()
+        {
+            context?.Dispose();
+            return Task.CompletedTask;
         }
     }
 }
